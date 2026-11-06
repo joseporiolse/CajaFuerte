@@ -5,3 +5,10 @@ C:\Users\salahedineaouaji\source\repos\CajaFuerte_Zaidi_Sert_\CajaFuerte_Zaidi_S
 C:\Users\salahedineaouaji\source\repos\CajaFuerte_Zaidi_Sert_\CajaFuerte_Zaidi_Sert\obj\Debug\CajaFuerte_Zaidi_Sert.csproj.CoreCompileInputs.cache
 C:\Users\salahedineaouaji\source\repos\CajaFuerte_Zaidi_Sert_\CajaFuerte_Zaidi_Sert\obj\Debug\CajaFuerte_Zaidi_Sert.exe
 C:\Users\salahedineaouaji\source\repos\CajaFuerte_Zaidi_Sert_\CajaFuerte_Zaidi_Sert\obj\Debug\CajaFuerte_Zaidi_Sert.pdb
+C:\Users\joseporiolse\Documents\github\CajaFuerte\CajaFuerte_Zaidi_Sert_\CajaFuerte_Zaidi_Sert\bin\Debug\CajaFuerte_Zaidi_Sert.exe.config
+C:\Users\joseporiolse\Documents\github\CajaFuerte\CajaFuerte_Zaidi_Sert_\CajaFuerte_Zaidi_Sert\bin\Debug\CajaFuerte_Zaidi_Sert.exe
+C:\Users\joseporiolse\Documents\github\CajaFuerte\CajaFuerte_Zaidi_Sert_\CajaFuerte_Zaidi_Sert\bin\Debug\CajaFuerte_Zaidi_Sert.pdb
+C:\Users\joseporiolse\Documents\github\CajaFuerte\CajaFuerte_Zaidi_Sert_\CajaFuerte_Zaidi_Sert\obj\Debug\CajaFuerte_Zaidi_Sert.csproj.AssemblyReference.cache
+C:\Users\joseporiolse\Documents\github\CajaFuerte\CajaFuerte_Zaidi_Sert_\CajaFuerte_Zaidi_Sert\obj\Debug\CajaFuerte_Zaidi_Sert.csproj.CoreCompileInputs.cache
+C:\Users\joseporiolse\Documents\github\CajaFuerte\CajaFuerte_Zaidi_Sert_\CajaFuerte_Zaidi_Sert\obj\Debug\CajaFuerte_Zaidi_Sert.exe
+C:\Users\joseporiolse\Documents\github\CajaFuerte\CajaFuerte_Zaidi_Sert_\CajaFuerte_Zaidi_Sert\obj\Debug\CajaFuerte_Zaidi_Sert.pdb

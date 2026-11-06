@@ -17,17 +17,20 @@ class Program
 {
     static void Main(string[] args)
     {
+        //Comprobamos que el usuario haya introducido 4 argumentos
         if (args.Length != 4)
         {
             MostrarAyuda();
             return;
         }
 
-        string accion = args[0].ToLower();
-        string entrada = args[1];
-        string salida = args[2];
-        string contrasena = args[3];
+        //Guardamos los argumentos introducidos por el usuario
+        string accion = args[0].ToLower(); //cifrar o descifrar
+        string entrada = args[1]; //ruta archivo original
+        string salida = args[2]; //ruta donde se guardara el resultado
+        string contrasena = args[3]; //contiene la contraseña
 
+        //Comprobamos que la contraseña sea válida y que los archivos existan o no según corresponda
         if (string.IsNullOrWhiteSpace(contrasena))
         {
             Console.WriteLine("Error: debes indicar una contraseña.");
@@ -46,10 +49,12 @@ class Program
             return;
         }
 
+        //Intentamos ejecutar y controlamos los errores
         try
         {
             if (accion == "cifrar")
             {
+                //Comprobamos que la entrada sea .txt y la salida .caja
                 if (Path.GetExtension(entrada).ToLower() != ".txt" ||
                     Path.GetExtension(salida).ToLower() != ".caja")
                 {
@@ -61,6 +66,7 @@ class Program
             }
             else if (accion == "descifrar")
             {
+                //Comprobamos que el archivo de entrada sea .caja
                 if (Path.GetExtension(entrada).ToLower() != ".caja")
                 {
                     Console.WriteLine("Error: el archivo de entrada debe ser .caja.");
@@ -92,35 +98,39 @@ class Program
         }
     }
 
+    //Ciframos el archivo utilizando AES-256
     static void Cifrar(string entrada, string salida, string contrasena)
     {
         byte[] datos = File.ReadAllBytes(entrada);
 
-        // Generamos una sal y un IV aleatorios.
-        byte[] sal = new byte[16];
-        byte[] iv = new byte[16];
+        byte[] sal = new byte[16]; //Para conseguir una clave diferente en cada archivo
+        byte[] iv = new byte[16]; //Para que el cifrado no sea siempre igual
 
-        using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+        //Generamos la sal y el IV de forma aleatoria y segura
+        using (RandomNumberGenerator generadorAleatorio = RandomNumberGenerator.Create())
         {
-            rng.GetBytes(sal);
-            rng.GetBytes(iv);
+            generadorAleatorio.GetBytes(sal);
+            generadorAleatorio.GetBytes(iv);
         }
 
-        // Sacamos dos claves diferentes a partir de la contraseña.
+        //Sacamos 64 bytes de la contraseña y la sal usando PBKDF2 con SHA256 y 600000 iteraciones
         byte[] claves;
-        using (Rfc2898DeriveBytes pbkdf2 = new Rfc2898DeriveBytes(
+        using (Rfc2898DeriveBytes generadorClaves = new Rfc2898DeriveBytes(
             contrasena, sal, 600000, HashAlgorithmName.SHA256))
         {
-            claves = pbkdf2.GetBytes(64);
+            claves = generadorClaves.GetBytes(64);
         }
 
-        byte[] claveAes = new byte[32];
-        byte[] claveHmac = new byte[32];
+        //Separamos los 64 bytes en dos claves diferentes
+        byte[] claveAes = new byte[32]; //Para cifrar
+        byte[] claveHmac = new byte[32]; //Para comprobar modificaciones
+
         Array.Copy(claves, 0, claveAes, 0, 32);
         Array.Copy(claves, 32, claveHmac, 0, 32);
 
-        // Ciframos con AES-256 en modo CBC.
         byte[] cifrado;
+
+        //Configuramos AES con una clave de 256 bits y el modo CBC
         using (Aes aes = Aes.Create())
         {
             aes.KeySize = 256;
@@ -129,37 +139,42 @@ class Program
             aes.Mode = CipherMode.CBC;
             aes.Padding = PaddingMode.PKCS7;
 
+            //Ciframos los datos y guardamos el resultado en memoria
             using (MemoryStream memoria = new MemoryStream())
             {
-                using (CryptoStream crypto = new CryptoStream(
+                using (CryptoStream procesoCifrado = new CryptoStream(
                     memoria, aes.CreateEncryptor(), CryptoStreamMode.Write))
                 {
-                    crypto.Write(datos, 0, datos.Length);
-                    crypto.FlushFinalBlock();
+                    procesoCifrado.Write(datos, 0, datos.Length);
+                    procesoCifrado.FlushFinalBlock();
                     cifrado = memoria.ToArray();
                 }
             }
         }
 
-        // Hacemos el HMAC con la sal, el IV y el contenido cifrado.
+        //Preparamos la sal, el IV y el cifrado para comprobar su integridad
         byte[] datosHmac = new byte[32 + cifrado.Length];
+
         Array.Copy(sal, 0, datosHmac, 0, 16);
         Array.Copy(iv, 0, datosHmac, 16, 16);
         Array.Copy(cifrado, 0, datosHmac, 32, cifrado.Length);
 
+        //Calculamos el HMAC para detectar posibles modificaciones
         byte[] firma;
         using (HMACSHA256 hmac = new HMACSHA256(claveHmac))
         {
             firma = hmac.ComputeHash(datosHmac);
         }
 
-        // Guardamos: sal + IV + HMAC + contenido cifrado.
+        //Preparamos el archivo final con la sal, IV, HMAC y contenido cifrado
         byte[] archivoFinal = new byte[64 + cifrado.Length];
+
         Array.Copy(sal, 0, archivoFinal, 0, 16);
         Array.Copy(iv, 0, archivoFinal, 16, 16);
         Array.Copy(firma, 0, archivoFinal, 32, 32);
         Array.Copy(cifrado, 0, archivoFinal, 64, cifrado.Length);
 
+        //Guardamos el archivo .caja sin sobrescribir otros archivos
         using (FileStream fichero = new FileStream(salida, FileMode.CreateNew))
         {
             fichero.Write(archivoFinal, 0, archivoFinal.Length);
@@ -168,66 +183,75 @@ class Program
         Console.WriteLine("Archivo cifrado correctamente.");
     }
 
+    //Desciframos el archivo para recuperar el contenido original
     static void Descifrar(string entrada, string salida, string contrasena)
     {
         byte[] archivo = File.ReadAllBytes(entrada);
 
+        //Comprobamos que tenga un tamaño correcto y bloques de 16 bytes
         if (archivo.Length < 80 || (archivo.Length - 64) % 16 != 0)
         {
             Console.WriteLine("Error: el archivo .caja no tiene el formato correcto.");
             return;
         }
 
-        // Separamos los cuatro bloques del archivo.
+        //Separamos los datos que contiene el archivo
         byte[] sal = new byte[16];
         byte[] iv = new byte[16];
         byte[] firmaGuardada = new byte[32];
         byte[] cifrado = new byte[archivo.Length - 64];
+
         Array.Copy(archivo, 0, sal, 0, 16);
         Array.Copy(archivo, 16, iv, 0, 16);
         Array.Copy(archivo, 32, firmaGuardada, 0, 32);
         Array.Copy(archivo, 64, cifrado, 0, cifrado.Length);
 
-        // Obtenemos las mismas claves usando la contraseña y la sal guardada.
+        //Sacamos las mismas claves usando la contraseña y la sal guardada
         byte[] claves;
-        using (Rfc2898DeriveBytes pbkdf2 = new Rfc2898DeriveBytes(
+        using (Rfc2898DeriveBytes generadorClaves = new Rfc2898DeriveBytes(
             contrasena, sal, 600000, HashAlgorithmName.SHA256))
         {
-            claves = pbkdf2.GetBytes(64);
+            claves = generadorClaves.GetBytes(64);
         }
 
         byte[] claveAes = new byte[32];
         byte[] claveHmac = new byte[32];
+
         Array.Copy(claves, 0, claveAes, 0, 32);
         Array.Copy(claves, 32, claveHmac, 0, 32);
 
-        // Primero comprobamos el HMAC. Si no coincide, no desciframos.
+        //Preparamos los datos para comprobar si se han modificado
         byte[] datosHmac = new byte[32 + cifrado.Length];
+
         Array.Copy(sal, 0, datosHmac, 0, 16);
         Array.Copy(iv, 0, datosHmac, 16, 16);
         Array.Copy(cifrado, 0, datosHmac, 32, cifrado.Length);
 
+        //Calculamos el HMAC y lo comparamos con el que estaba guardado
         byte[] firmaCalculada;
         using (HMACSHA256 hmac = new HMACSHA256(claveHmac))
         {
             firmaCalculada = hmac.ComputeHash(datosHmac);
         }
 
-        // Comparamos todos los bytes del HMAC, sin salir a mitad del bucle.
+        //Comparamos todos los bytes sin detenernos antes de tiempo
         int diferencia = 0;
+
         for (int i = 0; i < 32; i++)
         {
             diferencia |= firmaGuardada[i] ^ firmaCalculada[i];
         }
 
+        //Si no coinciden rechazamos el archivo
         if (diferencia != 0)
         {
             Console.WriteLine("Error: contraseña incorrecta o archivo modificado.");
             return;
         }
 
-        // Solo desciframos cuando el HMAC es correcto.
         byte[] recuperado;
+
+        //Desciframos usando la misma configuración AES
         using (Aes aes = Aes.Create())
         {
             aes.KeySize = 256;
@@ -237,15 +261,16 @@ class Program
             aes.Padding = PaddingMode.PKCS7;
 
             using (MemoryStream memoria = new MemoryStream(cifrado))
-            using (CryptoStream crypto = new CryptoStream(
+            using (CryptoStream procesoDescifrado = new CryptoStream(
                 memoria, aes.CreateDecryptor(), CryptoStreamMode.Read))
             using (MemoryStream resultado = new MemoryStream())
             {
-                crypto.CopyTo(resultado);
+                procesoDescifrado.CopyTo(resultado);
                 recuperado = resultado.ToArray();
             }
         }
 
+        //Guardamos el archivo descifrado sin sobrescribir otros archivos
         using (FileStream fichero = new FileStream(salida, FileMode.CreateNew))
         {
             fichero.Write(recuperado, 0, recuperado.Length);
@@ -254,6 +279,7 @@ class Program
         Console.WriteLine("Archivo descifrado correctamente.");
     }
 
+    //Mostramos las instrucciones para utilizar el programa
     static void MostrarAyuda()
     {
         Console.WriteLine("Uso del programa:");
